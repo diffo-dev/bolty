@@ -3,7 +3,7 @@ import Config
 config :boltx, Bolt,
   # default port considered to be: 7687
   url: "bolt://localhost",
-  basic_auth: [username: "neo4j", password: "boltxPassword"],
+  basic_auth: [username: "neo4j", password: "password"],
   pool_size: 10,
   max_overflow: 2,
   queue_interval: 500,

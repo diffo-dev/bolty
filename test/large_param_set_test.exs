@@ -3,10 +3,6 @@ defmodule Large.Param.Set.Test do
   doctest Boltx
   @moduletag :legacy
 
-  setup_all do
-    {:ok, [conn: Boltx.conn()]}
-  end
-
   @doc """
   Boltex.Bolt.generate_chunks fails with too much data
   test provided by @adri, for issue #16

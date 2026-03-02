@@ -25,15 +25,20 @@ defmodule Boltx.Mixfile do
           threshold: 70
         ]
       ],
-      preferred_cli_env: [
+      aliases: aliases()
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
         bench: :bench,
         credo: :dev,
         boltx: :test,
         coveralls: :test,
         "coveralls.html": :test,
         "coveralls.travis": :test
-      ],
-      aliases: aliases()
+      ]
     ]
   end
 
