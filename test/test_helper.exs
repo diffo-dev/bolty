@@ -49,7 +49,7 @@ defmodule Boltx.TestHelper do
   def opts() do
     [
       hostname: "127.0.0.1",
-      auth: [username: "neo4j", password: "boltxPassword"],
+      auth: [username: "neo4j", password: "password"],
       user_agent: "boltxTest/1",
       ssl_opts: ssl_opts(),
       pool_size: 1,

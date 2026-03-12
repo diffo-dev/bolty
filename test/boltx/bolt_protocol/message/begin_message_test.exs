@@ -17,8 +17,7 @@ defmodule Boltx.BoltProtocol.Message.BeginMessageTest do
 
       assert <<0, 38, 177, 17, 164, 132, 109, 111, 100, 101, 129, 119, 137, 98, 111, 111, 107,
                109, 97, 114, 107, 115, 144, 130, 100, 98, 192, 139, 116, 120, 95, 109, 101, 116,
-               97, 100, 97, 116, 97, 192, 0,
-               0>> ==
+               97, 100, 97, 116, 97, 192, 0, 0>> ==
                BeginMessage.encode(bolt_version, %{
                  bookmarks: [],
                  mode: "w",

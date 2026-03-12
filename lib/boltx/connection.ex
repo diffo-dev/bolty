@@ -121,7 +121,7 @@ defmodule Boltx.Connection do
     end
   rescue
     e in Boltx.Error ->
-      {:error, %{code: :failure, message: "#{e.message}, code: #{e.code}"}, state}
+      {:error, %{code: :failure, message: "#{e.bolt.message}, code: #{e.code}"}, state}
 
     e ->
       {:error, %{code: :failure, message: e}}
