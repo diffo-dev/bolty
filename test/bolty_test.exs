@@ -169,7 +169,8 @@ defmodule BoltyTest do
       assert ~N[2024-01-21 15:41:40.706000] == localdatetime
       assert {:ok, "15:41:10.222000+00:00"} == TimeWithTZOffset.format_param(time)
       assert {:ok, "15:41:10.222000-06:00"} == TimeWithTZOffset.format_param(time_with_offset)
-      assert {:ok, "P1Y3M53DT2M5.000054S"} == TypesHelper.format_duration(duration) # note loss of nanoseconds
+      # note loss of nanoseconds
+      assert {:ok, "P1Y3M53DT2M5.000054S"} == TypesHelper.format_duration(duration)
     end
 
     @tag :core
@@ -231,13 +232,14 @@ defmodule BoltyTest do
       """
 
       assert {:ok, %Response{stats: stats, type: type}} =
-               Bolty.query(c.conn, cypher, %{props: %{name: "Mep", bolty: true, half_life: Duration.new!(year: 1)}})
+               Bolty.query(c.conn, cypher, %{
+                 props: %{name: "Mep", bolty: true, half_life: Duration.new!(year: 1)}
+               })
 
       assert stats["labels-added"] == 1
       assert stats["nodes-created"] == 1
       assert stats["properties-set"] == 3
       assert type == "w"
-
     end
 
     @tag :core
