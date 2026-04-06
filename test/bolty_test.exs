@@ -209,7 +209,6 @@ defmodule BoltyTest do
     end
 
     @tag :core
-    @tag :debug
     test "executing a Cypher query, with duration parameter", c do
       cypher = """
         CREATE(n:User {name: $name, max_session: $max_session}) RETURN n
