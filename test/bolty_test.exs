@@ -3,12 +3,13 @@ defmodule BoltyTest do
 
   alias Bolty.Response
   alias Bolty.Types.{Point, DateTimeWithTZOffset, TimeWithTZOffset}
+
   alias Bolty.TypesHelper
 
   @opts Bolty.TestHelper.opts()
 
   defmodule TestUser do
-    defstruct name: "", bolty: true
+    defstruct name: "", bolty: true, half_life: nil
   end
 
   describe "connect" do
@@ -102,7 +103,6 @@ defmodule BoltyTest do
     @tag :bolt_3_x
     @tag :bolt_4_x
     @tag :bolt_5_x
-    @tag :debug
     test "a query to get a Node with temporal functions", c do
       uuid = "6152f30e-076a-4479-b575-764bf6ab5e38"
 
@@ -209,6 +209,24 @@ defmodule BoltyTest do
     end
 
     @tag :core
+    test "executing a Cypher query, with duration parameter", c do
+      cypher = """
+        CREATE(n:User {name: $name, max_session: $max_session}) RETURN n
+      """
+
+      parameters = %{name: "Kote", max_session: Duration.new!(day: 1)}
+
+      n =
+        Bolty.query!(c.conn, cypher, parameters)
+        |> Response.first()
+        |> Map.get("n")
+
+      assert n.labels == ["User"]
+      assert n.properties["name"] == "Kote"
+      assert to_timeout(n.properties["max_session"]) == to_timeout(Duration.new!(day: 1))
+    end
+
+    @tag :core
     test "executing a Cypher query, with struct parameters", c do
       cypher = """
         CREATE(n:User $props)
@@ -216,12 +234,16 @@ defmodule BoltyTest do
 
       assert {:ok, %Response{stats: stats, type: type}} =
                Bolty.query(c.conn, cypher, %{
-                 props: %BoltyTest.TestUser{name: "Strut", bolty: true}
+                 props: %BoltyTest.TestUser{
+                   name: "Strut",
+                   bolty: true,
+                   half_life: Duration.new!(year: 1)
+                 }
                })
 
       assert stats["labels-added"] == 1
       assert stats["nodes-created"] == 1
-      assert stats["properties-set"] == 2
+      assert stats["properties-set"] == 3
       assert type == "w"
     end
 
