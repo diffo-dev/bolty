@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.0.9
+  * fix duration stored as string
+  
 ## v0.0.8
   * fix duration microseconds
 

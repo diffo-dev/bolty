@@ -40,7 +40,6 @@ defmodule Bolty do
         }
 
   alias Bolty.{Types}
-  alias Bolty.TypesHelper
 
   @doc """
   Starts the connection process and connects to a Bolt/Neo4j server.
@@ -181,9 +180,6 @@ defmodule Bolty do
       {:error, _} = error -> error
     end
   end
-
-  defp format_param({name, %Duration{} = duration}),
-    do: {name, TypesHelper.format_duration(duration)}
 
   defp format_param({name, %Types.Point{} = point}), do: {name, Types.Point.format_param(point)}
 
