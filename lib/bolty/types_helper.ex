@@ -81,7 +81,7 @@ defmodule Bolty.TypesHelper do
   end
 
   @doc """
-  Convert a %Duration in a cypher-compliant string.
+  Convert a %Duration into a cypher-compliant string.
   To know everything about duration format, please see:
   https://neo4j.com/docs/cypher-manual/current/syntax/temporal/#cypher-temporal-durations
   """
@@ -126,9 +126,9 @@ defmodule Bolty.TypesHelper do
          hour: h,
          minute: m,
          second: s,
-         microsecond: us
+         microsecond: {us, _precision}
        })
-       when h > 0 or m > 0 or s > 0 or us.microsecond > 0 do
+       when h > 0 or m > 0 or s > 0 or us > 0 do
     {seconds, nanoseconds} = cap_nanoseconds(s, us)
     nanoseconds_f = nanoseconds |> Integer.to_string() |> String.pad_leading(9, "0")
     seconds_f = "#{Integer.to_string(seconds)}.#{nanoseconds_f}" |> String.to_float()
@@ -162,10 +162,9 @@ defmodule Bolty.TypesHelper do
     Float.to_string(number)
   end
 
-  @spec cap_nanoseconds(integer(), tuple()) :: {integer(), integer()}
-  defp cap_nanoseconds(s, us) when is_integer(s) and is_tuple(us) do
-    {microseconds, _precision} = us
-    ns = microseconds * 1000
+  @spec cap_nanoseconds(integer(), integer()) :: {integer(), integer()}
+  defp cap_nanoseconds(s, us) when is_integer(s) and is_integer(us) do
+    ns = us * 1_000
     seconds_ = s + div(ns, 1_000_000_000)
     nanoseconds_ = rem(ns, 1_000_000_000)
     {seconds_, nanoseconds_}

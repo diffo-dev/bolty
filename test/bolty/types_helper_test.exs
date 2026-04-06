@@ -2,7 +2,6 @@ defmodule Bolty.TypesHelperTest do
   use ExUnit.Case, async: true
 
   alias Bolty.TypesHelper
-  @moduletag :legacy
 
   describe "decompose_in_hms/1:" do
     test "Ok if more than a hour" do
@@ -71,7 +70,7 @@ defmodule Bolty.TypesHelperTest do
         minute: 2,
         month: 3,
         # expect to lose precision on conversion to microseconds
-        microsecond: 54,
+        microsecond: {54, 6},
         second: 5,
         week: 0,
         year: 1
@@ -81,29 +80,29 @@ defmodule Bolty.TypesHelperTest do
     end
 
     test "format_param/1 successful with valid data" do
-      duration = TypesHelper.create_duration(15, 53, 125, 54)
+      duration = TypesHelper.create_duration(15, 53, 125, 54_150)
 
-      assert {:ok, "P1Y3M53DT2M5.000000054S"} = TypesHelper.format_duration(duration)
+      assert {:ok, "P1Y3M53DT2M5.000054S"} = TypesHelper.format_duration(duration)
     end
 
     test "format_param/1 successful with large amount of nanoseconds (use create/4 to build struct)" do
       duration = TypesHelper.create_duration(0, 0, 0, 12_545_876_654)
-      assert {:ok, "PT12.545876654S"} = TypesHelper.format_duration(duration)
+      assert {:ok, "PT12.545876S"} = TypesHelper.format_duration(duration)
     end
 
-    test "format_param/1 successful with large amount of nanoseconds (use %Duration{} to build struct)" do
+    test "format_param/1 successful with large amount of microseconds (use %Duration{} to build struct)" do
       duration = %Duration{
         day: 0,
         hour: 0,
         minute: 0,
         month: 0,
-        microsecond: 12_545_876_654,
+        microsecond: {12_545_876, 6},
         second: 0,
         week: 0,
         year: 0
       }
 
-      assert {:ok, "PT12.545876654S"} = TypesHelper.format_duration(duration)
+      assert {:ok, "PT12.545876S"} = TypesHelper.format_duration(duration)
     end
 
     test "format_param/1 fails for invalid data" do
@@ -112,7 +111,7 @@ defmodule Bolty.TypesHelperTest do
         hour: 0,
         minute: 2,
         month: 3,
-        microsecond: 54_000,
+        microsecond: {54_000, 6},
         second: 5,
         week: 0,
         year: 1

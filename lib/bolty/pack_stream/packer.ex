@@ -287,8 +287,9 @@ defimpl Bolty.PackStream.Packer, for: Duration do
     months = 12 * duration.year + duration.month
     days = 7 * duration.week + duration.day
     seconds = 3_600 * duration.hour + 60 * duration.minute + duration.second
-
-    [months, days, seconds, duration.microsecond * 1_000]
+    {microseconds, _precision} = duration.microsecond
+    nanoseconds = microseconds * 1_000
+    [months, days, seconds, nanoseconds]
   end
 end
 

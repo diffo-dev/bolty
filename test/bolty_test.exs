@@ -3,6 +3,7 @@ defmodule BoltyTest do
 
   alias Bolty.Response
   alias Bolty.Types.{Point, DateTimeWithTZOffset, TimeWithTZOffset}
+  alias Bolty.TypesHelper
 
   @opts Bolty.TestHelper.opts()
 
@@ -101,6 +102,7 @@ defmodule BoltyTest do
     @tag :bolt_3_x
     @tag :bolt_4_x
     @tag :bolt_5_x
+    @tag :debug
     test "a query to get a Node with temporal functions", c do
       uuid = "6152f30e-076a-4479-b575-764bf6ab5e38"
 
@@ -116,7 +118,8 @@ defmodule BoltyTest do
           localtime: LOCALTIME("15:41:10.222000000"),
           localdatetime: LOCALDATETIME("2024-01-21T15:41:40.706000000"),
           time: TIME("15:41:10.222000000Z"),
-          time_with_offset: TIME("15:41:10.222000000-06:00")
+          time_with_offset: TIME("15:41:10.222000000-06:00"),
+          duration: DURATION("P1Y3M53DT2M5.000054150S")
         })
       """
 
@@ -141,7 +144,8 @@ defmodule BoltyTest do
                        "localdatetime" => localdatetime,
                        "time_with_offset" => time_with_offset,
                        "name" => "John",
-                       "uuid" => "6152f30e-076a-4479-b575-764bf6ab5e38"
+                       "uuid" => "6152f30e-076a-4479-b575-764bf6ab5e38",
+                       "duration" => duration
                      }
                    }
                  }
@@ -165,6 +169,7 @@ defmodule BoltyTest do
       assert ~N[2024-01-21 15:41:40.706000] == localdatetime
       assert {:ok, "15:41:10.222000+00:00"} == TimeWithTZOffset.format_param(time)
       assert {:ok, "15:41:10.222000-06:00"} == TimeWithTZOffset.format_param(time_with_offset)
+      assert {:ok, "P1Y3M53DT2M5.000054S"} == TypesHelper.format_duration(duration) # note loss of nanoseconds
     end
 
     @tag :core
@@ -220,18 +225,19 @@ defmodule BoltyTest do
     end
 
     @tag :core
-    test "executing a Cpyher query, with map parameters", c do
+    test "executing a Cypher query, with map parameters", c do
       cypher = """
         CREATE(n:User $props)
       """
 
       assert {:ok, %Response{stats: stats, type: type}} =
-               Bolty.query(c.conn, cypher, %{props: %{name: "Mep", bolty: true}})
+               Bolty.query(c.conn, cypher, %{props: %{name: "Mep", bolty: true, half_life: Duration.new!(year: 1)}})
 
       assert stats["labels-added"] == 1
       assert stats["nodes-created"] == 1
-      assert stats["properties-set"] == 2
+      assert stats["properties-set"] == 3
       assert type == "w"
+
     end
 
     @tag :core
@@ -530,7 +536,7 @@ defmodule BoltyTest do
           hour: 0,
           minute: 54,
           month: 12,
-          microsecond: 0,
+          microsecond: {0, 6},
           second: 65,
           week: 0,
           year: 1
@@ -542,7 +548,7 @@ defmodule BoltyTest do
         hour: 0,
         minute: 55,
         month: 0,
-        microsecond: 0,
+        microsecond: {0, 6},
         second: 5,
         week: 0,
         year: 2
