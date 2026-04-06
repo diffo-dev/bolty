@@ -1,6 +1,5 @@
 defmodule Bolty.TypesTest do
   use ExUnit.Case, async: true
-  @moduletag :legacy
 
   alias Bolty.Types.{DateTimeWithTZOffset, TimeWithTZOffset, Point}
 

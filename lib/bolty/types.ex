@@ -251,7 +251,7 @@ defmodule Bolty.Types do
     end
 
     @doc """
-    Convert DateTimeWithTZOffset struct in a cypher-compliant  string
+    Convert DateTimeWithTZOffset struct into a cypher-compliant string
     """
     @spec format_param(DateTimeWithTZOffset.t()) :: {:ok, String.t()} | {:error, any()}
     def format_param(%DateTimeWithTZOffset{naive_datetime: ndt, timezone_offset: offset})
