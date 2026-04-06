@@ -1,0 +1,123 @@
+defmodule Bolty.TypesHelperTest do
+  use ExUnit.Case, async: true
+
+  alias Bolty.TypesHelper
+
+  describe "decompose_in_hms/1:" do
+    test "Ok if more than a hour" do
+      assert {1, 6, 27} = TypesHelper.decompose_in_hms(3987)
+    end
+
+    test "Ok if less than a hour" do
+      assert {0, 44, 35} = TypesHelper.decompose_in_hms(2675)
+    end
+
+    test "Ok if less than a minute" do
+      assert {0, 0, 43} = TypesHelper.decompose_in_hms(43)
+    end
+
+    test "edge case: 1 hour" do
+      assert {1, 0, 0} = TypesHelper.decompose_in_hms(3600)
+    end
+
+    test "edge case: 1 minute" do
+      assert {0, 1, 0} = TypesHelper.decompose_in_hms(60)
+    end
+  end
+
+  describe "datetime_with_micro/2:" do
+    test "Successful with valid data" do
+      expected = %DateTime{
+        calendar: Calendar.ISO,
+        day: 1,
+        hour: 23,
+        microsecond: {0, 0},
+        minute: 0,
+        month: 1,
+        second: 7,
+        std_offset: 0,
+        time_zone: "Europe/Paris",
+        utc_offset: 3600,
+        year: 2000,
+        zone_abbr: "CET"
+      }
+
+      assert ^expected = TypesHelper.datetime_with_micro(~N[2000-01-01 23:00:07], "Europe/Paris")
+    end
+
+    test "Fails with invalid timezone" do
+      assert_raise ArgumentError, fn ->
+        TypesHelper.datetime_with_micro(~N[2000-01-01 23:00:07], "Invalid")
+      end
+    end
+  end
+
+  describe "formated-time_offset/1" do
+    test "Valid positive offset" do
+      assert "+01:03" == TypesHelper.formated_time_offset(3783)
+    end
+
+    test "Valid negative offset" do
+      assert "-01:03" == TypesHelper.formated_time_offset(-3783)
+    end
+  end
+
+  describe "Elixir Duration" do
+    test "create/4" do
+      expected = %Duration{
+        day: 53,
+        hour: 0,
+        minute: 2,
+        month: 3,
+        # expect to lose precision on conversion to microseconds
+        microsecond: {54, 6},
+        second: 5,
+        week: 0,
+        year: 1
+      }
+
+      assert expected == TypesHelper.create_duration(15, 53, 125, 54_150)
+    end
+
+    test "format_param/1 successful with valid data" do
+      duration = TypesHelper.create_duration(15, 53, 125, 54_150)
+
+      assert {:ok, "P1Y3M53DT2M5.000054S"} = TypesHelper.format_duration(duration)
+    end
+
+    test "format_param/1 successful with large amount of nanoseconds (use create/4 to build struct)" do
+      duration = TypesHelper.create_duration(0, 0, 0, 12_545_876_654)
+      assert {:ok, "PT12.545876S"} = TypesHelper.format_duration(duration)
+    end
+
+    test "format_param/1 successful with large amount of microseconds (use %Duration{} to build struct)" do
+      duration = %Duration{
+        day: 0,
+        hour: 0,
+        minute: 0,
+        month: 0,
+        microsecond: {12_545_876, 6},
+        second: 0,
+        week: 0,
+        year: 0
+      }
+
+      assert {:ok, "PT12.545876S"} = TypesHelper.format_duration(duration)
+    end
+
+    test "format_param/1 fails for invalid data" do
+      duration = %Duration{
+        day: 53.45,
+        hour: 0,
+        minute: 2,
+        month: 3,
+        microsecond: {54_000, 6},
+        second: 5,
+        week: 0,
+        year: 1
+      }
+
+      assert {:error, ^duration} = TypesHelper.format_duration(duration)
+    end
+  end
+end
