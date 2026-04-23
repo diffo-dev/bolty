@@ -3,6 +3,11 @@ defprotocol Bolty.PackStream.Packer do
   The `Bolty.PackStream.Packer` protocol is responsible for serializing any Elixir data
   structure according to the PackStream specification.
 
+  Every concrete implementation receives the resolved `%Bolty.Policy{}` for the
+  current connection as a second argument. Types whose wire format is
+  version-dependent (currently `DateTime` and `DateTimeWithTZOffset`) pattern-
+  match on it; the rest ignore it.
+
   ##  Serializing for structs
   By default, all structures are serialized with all their fields. However, if it is
   necessary that only certain fields be considered for serialization, it is necessary to
@@ -15,31 +20,31 @@ defprotocol Bolty.PackStream.Packer do
 
   """
   @fallback_to_any true
-  def pack(term)
+  def pack(term, policy)
 end
 
 defimpl Bolty.PackStream.Packer, for: Atom do
   use Bolty.PackStream.Markers
 
-  def pack(nil), do: <<@null_marker>>
-  def pack(false), do: <<@false_marker>>
-  def pack(true), do: <<@true_marker>>
+  def pack(nil, _policy), do: <<@null_marker>>
+  def pack(false, _policy), do: <<@false_marker>>
+  def pack(true, _policy), do: <<@true_marker>>
 
-  def pack(atom) do
+  def pack(atom, policy) do
     atom
     |> Atom.to_string()
-    |> @protocol.BitString.pack()
+    |> @protocol.BitString.pack(policy)
   end
 end
 
 defimpl Bolty.PackStream.Packer, for: BitString do
   use Bolty.PackStream.Markers
 
-  def pack(binary) when is_binary(binary) do
+  def pack(binary, _policy) when is_binary(binary) do
     [marker(binary), binary]
   end
 
-  def pack(bits) do
+  def pack(bits, _policy) do
     throw(Bolty.Error.wrap(__MODULE__, :not_encodable, bits: bits))
   end
 
@@ -59,11 +64,11 @@ end
 defimpl Bolty.PackStream.Packer, for: Integer do
   use Bolty.PackStream.Markers
 
-  def pack(integer) when integer in -16..127 do
+  def pack(integer, _policy) when integer in -16..127 do
     <<integer>>
   end
 
-  def pack(integer) do
+  def pack(integer, _policy) do
     case integer do
       integer when integer in @int8 ->
         <<@int8_marker, integer>>
@@ -83,7 +88,7 @@ end
 defimpl Bolty.PackStream.Packer, for: Float do
   use Bolty.PackStream.Markers
 
-  def pack(number) do
+  def pack(number, _policy) do
     <<@float_marker, number::float>>
   end
 end
@@ -91,8 +96,8 @@ end
 defimpl Bolty.PackStream.Packer, for: List do
   use Bolty.PackStream.Markers
 
-  def pack(list) do
-    [marker(list), list |> Enum.map(&@protocol.pack(&1))]
+  def pack(list, policy) do
+    [marker(list), list |> Enum.map(&@protocol.pack(&1, policy))]
   end
 
   defp marker(list) do
@@ -111,8 +116,8 @@ end
 defimpl Bolty.PackStream.Packer, for: Map do
   use Bolty.PackStream.Markers
 
-  def pack(map) do
-    [marker(map), map |> encode_kv()]
+  def pack(map, policy) do
+    [marker(map), map |> encode_kv(policy)]
   end
 
   defp marker(map) do
@@ -127,16 +132,16 @@ defimpl Bolty.PackStream.Packer, for: Map do
     end
   end
 
-  @spec encode_kv(map()) :: binary()
-  defp encode_kv(map) do
-    Enum.reduce(map, <<>>, fn data, acc -> [acc, do_reduce_kv(data)] end)
+  @spec encode_kv(map(), Bolty.Policy.t()) :: binary()
+  defp encode_kv(map, policy) do
+    Enum.reduce(map, <<>>, fn data, acc -> [acc, do_reduce_kv(data, policy)] end)
   end
 
-  @spec do_reduce_kv({atom(), any()}) :: [binary()]
-  defp do_reduce_kv({key, value}) do
+  @spec do_reduce_kv({atom(), any()}, Bolty.Policy.t()) :: [binary()]
+  defp do_reduce_kv({key, value}, policy) do
     [
-      @protocol.pack(key),
-      @protocol.pack(value)
+      @protocol.pack(key, policy),
+      @protocol.pack(value, policy)
     ]
   end
 end
@@ -144,12 +149,12 @@ end
 defimpl Bolty.PackStream.Packer, for: Time do
   use Bolty.PackStream.Markers
 
-  def pack(time) do
+  def pack(time, policy) do
     local_time = day_time(time)
 
     [
       <<@tiny_struct_marker::4, @local_time_struct_size::4, @local_time_signature>>,
-      @protocol.pack(local_time)
+      @protocol.pack(local_time, policy)
     ]
   end
 
@@ -162,36 +167,61 @@ end
 defimpl Bolty.PackStream.Packer, for: Date do
   use Bolty.PackStream.Markers
 
-  def pack(date) do
+  def pack(date, policy) do
     epoch = Date.diff(date, ~D[1970-01-01])
-    [<<@tiny_struct_marker::4, @date_struct_size::4, @date_signature>>, @protocol.pack(epoch)]
+
+    [
+      <<@tiny_struct_marker::4, @date_struct_size::4, @date_signature>>,
+      @protocol.pack(epoch, policy)
+    ]
   end
 end
 
 defimpl Bolty.PackStream.Packer, for: DateTime do
   use Bolty.PackStream.Markers
 
-  def pack(datetime) do
-    data =
-      Enum.map(
-        decompose_datetime(DateTime.to_naive(datetime)) ++ [datetime.time_zone],
-        &@protocol.pack(&1)
-      )
+  alias Bolty.Policy
+
+  # Bolt 5 (evolved): body carries UTC-instant seconds since epoch.
+  # Distinct from the legacy encoding whenever the zone is non-UTC — this is
+  # exactly the "UTC-aware DateTime" fix that Bolt 5 introduced.
+  def pack(%DateTime{} = dt, %Policy{datetime: :evolved} = policy) do
+    body = decompose_utc(dt) ++ [dt.time_zone]
+
+    [
+      <<@tiny_struct_marker::4, @datetime_with_zone_id_struct_size::4,
+        @datetime_with_zone_id_signature>>,
+      Enum.map(body, &@protocol.pack(&1, policy))
+    ]
+  end
+
+  # Bolt <= 4 (legacy): body carries local-wall-clock seconds (naive diff from
+  # epoch, ignoring zone offset). Symmetric with the unpacker's legacy path
+  # which rebuilds via `NaiveDateTime.add` + `datetime_with_micro`.
+  def pack(%DateTime{} = dt, %Policy{datetime: :legacy} = policy) do
+    body = decompose_local(dt) ++ [dt.time_zone]
 
     [
       <<@tiny_struct_marker::4, @legacy_datetime_with_zone_id_struct_size::4,
         @legacy_datetime_with_zone_id_signature>>,
-      data
+      Enum.map(body, &@protocol.pack(&1, policy))
     ]
   end
 
-  @spec decompose_datetime(Calendar.naive_datetime()) :: [integer()]
-  defp decompose_datetime(%NaiveDateTime{} = datetime) do
-    datetime_micros = NaiveDateTime.diff(datetime, ~N[1970-01-01 00:00:00.000], :microsecond)
+  @spec decompose_utc(DateTime.t()) :: [integer()]
+  defp decompose_utc(%DateTime{} = dt) do
+    total_us = DateTime.to_unix(dt, :microsecond)
+    seconds = Integer.floor_div(total_us, 1_000_000)
+    nanoseconds = (total_us - seconds * 1_000_000) * 1_000
+    [seconds, nanoseconds]
+  end
 
-    seconds = div(datetime_micros, 1_000_000)
-    nanoseconds = rem(datetime_micros, 1_000_000) * 1_000
-
+  @spec decompose_local(DateTime.t()) :: [integer()]
+  defp decompose_local(%DateTime{} = dt) do
+    naive = DateTime.to_naive(dt)
+    total_us = NaiveDateTime.diff(naive, ~N[1970-01-01 00:00:00.000], :microsecond)
+    seconds = Integer.floor_div(total_us, 1_000_000)
+    nanoseconds = (total_us - seconds * 1_000_000) * 1_000
     [seconds, nanoseconds]
   end
 end
@@ -199,11 +229,11 @@ end
 defimpl Bolty.PackStream.Packer, for: NaiveDateTime do
   use Bolty.PackStream.Markers
 
-  def pack(local_datetime) do
+  def pack(local_datetime, policy) do
     data =
       Enum.map(
         decompose_datetime(local_datetime),
-        &@protocol.pack(&1)
+        &@protocol.pack(&1, policy)
       )
 
     [<<@tiny_struct_marker::4, @local_datetime_struct_size::4, @local_datetime_signature>>, data]
@@ -223,13 +253,13 @@ end
 defimpl Bolty.PackStream.Packer, for: Bolty.Types.TimeWithTZOffset do
   use Bolty.PackStream.Markers
 
-  def pack(%Bolty.Types.TimeWithTZOffset{time: time, timezone_offset: offset}) do
+  def pack(%Bolty.Types.TimeWithTZOffset{time: time, timezone_offset: offset}, policy) do
     time_and_offset = [day_time(time), offset]
 
     data =
       Enum.map(
         time_and_offset,
-        &@protocol.pack(&1)
+        &@protocol.pack(&1, policy)
       )
 
     [<<@tiny_struct_marker::4, @time_with_tz_struct_size::4, @time_with_tz_signature>>, data]
@@ -244,27 +274,47 @@ end
 defimpl Bolty.PackStream.Packer, for: Bolty.Types.DateTimeWithTZOffset do
   use Bolty.PackStream.Markers
 
-  def pack(%Bolty.Types.DateTimeWithTZOffset{naive_datetime: ndt, timezone_offset: tz_offset}) do
-    data =
-      Enum.map(
-        decompose_datetime(ndt) ++ [tz_offset],
-        &@protocol.pack(&1)
-      )
+  alias Bolty.Policy
+
+  # Bolt 5 (evolved): body carries UTC-instant seconds. Because the struct's
+  # `naive_datetime` field stores the local wall clock, we subtract the zone
+  # offset to obtain the UTC seconds the wire expects. The unpacker's evolved
+  # path re-adds the offset to rebuild the local naive — so this round-trips.
+  def pack(
+        %Bolty.Types.DateTimeWithTZOffset{naive_datetime: ndt, timezone_offset: offset},
+        %Policy{datetime: :evolved} = policy
+      ) do
+    [local_seconds, nanoseconds] = decompose_naive(ndt)
+    body = [local_seconds - offset, nanoseconds, offset]
+
+    [
+      <<@tiny_struct_marker::4, @datetime_with_zone_offset_struct_size::4,
+        @datetime_with_zone_offset_signature>>,
+      Enum.map(body, &@protocol.pack(&1, policy))
+    ]
+  end
+
+  # Bolt <= 4 (legacy): body carries local-wall-clock seconds unchanged. The
+  # unpacker's legacy path rebuilds the naive directly without offset
+  # arithmetic, so no adjustment here.
+  def pack(
+        %Bolty.Types.DateTimeWithTZOffset{naive_datetime: ndt, timezone_offset: offset},
+        %Policy{datetime: :legacy} = policy
+      ) do
+    body = decompose_naive(ndt) ++ [offset]
 
     [
       <<@tiny_struct_marker::4, @legacy_datetime_with_zone_offset_struct_size::4,
         @legacy_datetime_with_zone_offset_signature>>,
-      data
+      Enum.map(body, &@protocol.pack(&1, policy))
     ]
   end
 
-  @spec decompose_datetime(Calendar.naive_datetime()) :: [integer()]
-  defp decompose_datetime(%NaiveDateTime{} = datetime) do
-    datetime_micros = NaiveDateTime.diff(datetime, ~N[1970-01-01 00:00:00.000], :microsecond)
-
-    seconds = div(datetime_micros, 1_000_000)
-    nanoseconds = rem(datetime_micros, 1_000_000) * 1_000
-
+  @spec decompose_naive(Calendar.naive_datetime()) :: [integer()]
+  defp decompose_naive(%NaiveDateTime{} = datetime) do
+    total_us = NaiveDateTime.diff(datetime, ~N[1970-01-01 00:00:00.000], :microsecond)
+    seconds = Integer.floor_div(total_us, 1_000_000)
+    nanoseconds = (total_us - seconds * 1_000_000) * 1_000
     [seconds, nanoseconds]
   end
 end
@@ -272,11 +322,11 @@ end
 defimpl Bolty.PackStream.Packer, for: Duration do
   use Bolty.PackStream.Markers
 
-  def pack(duration) do
+  def pack(duration, policy) do
     data =
       Enum.map(
         compact_duration(duration),
-        &@protocol.pack(&1)
+        &@protocol.pack(&1, policy)
       )
 
     [<<@tiny_struct_marker::4, @duration_struct_size::4, @duration_signature>>, data]
@@ -296,21 +346,21 @@ end
 defimpl Bolty.PackStream.Packer, for: Bolty.Types.Point do
   use Bolty.PackStream.Markers
 
-  def pack(%Bolty.Types.Point{z: nil} = point) do
+  def pack(%Bolty.Types.Point{z: nil} = point, policy) do
     data =
       Enum.map(
         [point.srid, point.x, point.y],
-        &@protocol.pack(&1)
+        &@protocol.pack(&1, policy)
       )
 
     [<<@tiny_struct_marker::4, @point2d_struct_size::4, @point2d_signature>>, data]
   end
 
-  def pack(%Bolty.Types.Point{} = point) do
+  def pack(%Bolty.Types.Point{} = point, policy) do
     data =
       Enum.map(
         [point.srid, point.x, point.y, point.z],
-        &@protocol.pack(&1)
+        &@protocol.pack(&1, policy)
       )
 
     [<<@tiny_struct_marker::4, @point3d_struct_size::4, @point3d_signature>>, data]
@@ -350,19 +400,19 @@ defimpl Bolty.PackStream.Packer, for: Any do
 
     quote do
       defimpl unquote(@protocol), for: unquote(module) do
-        def pack(struct) do
+        def pack(struct, policy) do
           unquote(extractor)
-          |> @protocol.Map.pack()
+          |> @protocol.Map.pack(policy)
         end
       end
     end
   end
 
-  def pack(%{__struct__: _} = struct) do
-    @protocol.Map.pack(Map.from_struct(struct))
+  def pack(%{__struct__: _} = struct, policy) do
+    @protocol.Map.pack(Map.from_struct(struct), policy)
   end
 
-  def pack(term) do
+  def pack(term, _policy) do
     raise Protocol.UndefinedError, protocol: @protocol, value: term
   end
 end

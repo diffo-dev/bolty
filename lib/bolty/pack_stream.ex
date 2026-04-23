@@ -3,12 +3,13 @@ defmodule Bolty.PackStream do
 
   alias Bolty.PackStream.Packer
   alias Bolty.PackStream.Unpacker
+  alias Bolty.Policy
 
-  def pack(term, options \\ []) do
+  def pack(term, policy \\ %Policy{}, options \\ []) do
     iodata? = Keyword.get(options, :iodata, false)
 
     try do
-      Packer.pack(term)
+      Packer.pack(term, policy)
     catch
       :throw, error ->
         {:error, error}
@@ -24,9 +25,9 @@ defmodule Bolty.PackStream do
     end
   end
 
-  @spec pack!(term, Keyword.t()) :: iodata | no_return
-  def pack!(term, options \\ []) do
-    case pack(term, options) do
+  @spec pack!(term, Policy.t(), Keyword.t()) :: iodata | no_return
+  def pack!(term, policy \\ %Policy{}, options \\ []) do
+    case pack(term, policy, options) do
       {:ok, result} ->
         result
 
@@ -35,7 +36,7 @@ defmodule Bolty.PackStream do
     end
   end
 
-  @spec unpack(binary()) :: list()
+  @spec unpack(any()) :: {:error, any()} | {:ok, list()}
   def unpack(iodata) do
     try do
       iodata

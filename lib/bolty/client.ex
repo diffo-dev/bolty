@@ -27,7 +27,7 @@ defmodule Bolty.Client do
     LogoffMessage
   }
 
-  defstruct [:sock, :bolt_version]
+  defstruct [:sock, :bolt_version, policy: %Bolty.Policy{}]
 
   defmodule Config do
     @moduledoc false
@@ -282,7 +282,8 @@ defmodule Bolty.Client do
   end
 
   def send_run(client, query, parameters, extra_parameters) do
-    payload = RunMessage.encode(client.bolt_version, query, parameters, extra_parameters)
+    payload =
+      RunMessage.encode(client.bolt_version, query, parameters, extra_parameters, client.policy)
 
     with :ok <- send_packet(client, payload) do
       recv_packets(client, &RunMessage.prepare_messages/2, :infinity)

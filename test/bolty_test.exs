@@ -227,6 +227,58 @@ defmodule BoltyTest do
     end
 
     @tag :core
+    test "executing a Cypher query, with date_time parameter", c do
+      cypher = """
+        CREATE(n:User {name: $name, joined: $joined}) RETURN n
+      """
+
+      parameters = %{name: "Kote", joined: DateTime.utc_now()}
+
+      n =
+        Bolty.query!(c.conn, cypher, parameters)
+        |> Response.first()
+        |> Map.get("n")
+
+      assert n.labels == ["User"]
+      assert n.properties["name"] == "Kote"
+      assert n.properties["joined"] == parameters.joined
+    end
+
+    @tag :core
+    test "executing a Cypher query, with non-UTC zoned DateTime parameter (Europe/Berlin)", c do
+      # Regression for issue #10 — UTC round-trip passes even when body semantics
+      # are wrong because UTC offset is 0. A zoned DateTime in Europe/Berlin
+      # forces the evolved packer to emit UTC-instant seconds (local − offset);
+      # if we accidentally emit local-wall-clock seconds on Bolt 5, the server
+      # stores an instant shifted by one zone offset and `DateTime.compare/2`
+      # returns `:gt` or `:lt` instead of `:eq`.
+      cypher = """
+        CREATE(n:User {name: $name, joined: $joined}) RETURN n
+      """
+
+      {:ok, berlin_now} = DateTime.now("Europe/Berlin")
+      parameters = %{name: "Kvothe", joined: berlin_now}
+
+      n =
+        Bolty.query!(c.conn, cypher, parameters)
+        |> Response.first()
+        |> Map.get("n")
+
+      assert n.labels == ["User"]
+      assert n.properties["name"] == "Kvothe"
+      # Strict equality: server should preserve the zone id string, and under
+      # the evolved policy the UTC instant should round-trip exactly. If the
+      # evolved packer accidentally emits local-wall-clock seconds instead of
+      # UTC seconds, the returned DateTime will be shifted by one zone offset
+      # and this assertion fails with a one-hour (or one-CEST-offset) delta.
+      assert n.properties["joined"] == parameters.joined
+      # Belt-and-braces check: even if the returned zone is canonicalised,
+      # the UTC instant must still match. This isolates body-semantics
+      # regressions from zone-string canonicalisation drift.
+      assert DateTime.compare(n.properties["joined"], parameters.joined) == :eq
+    end
+
+    @tag :core
     test "executing a Cypher query, with struct parameters", c do
       cypher = """
         CREATE(n:User $props)
@@ -490,7 +542,7 @@ defmodule BoltyTest do
     @tag :bolt_3_x
     @tag :bolt_4_x
     @tag :bolt_5_x
-    test "Cypher with plan resul", c do
+    test "Cypher with plan result", c do
       assert %Response{plan: plan} = Bolty.query!(c.conn, "EXPLAIN RETURN 1")
       refute plan == nil
       assert Regex.match?(~r/[3|4|5]/iu, plan["args"]["planner-version"])
@@ -547,38 +599,75 @@ defmodule BoltyTest do
              ]
     end
 
+    @tag :core
     @tag :bolt_2_x
     @tag :bolt_3_x
     @tag :bolt_4_x
     @tag :bolt_5_x
-    test "transform Duration in cypher-compliant data", c do
-      query = "RETURN duration($d) AS d"
+    test "Duration as Cypher input: datetime + duration → datetime", c do
+      # Exercises DURATION-as-input. Cypher's `+` operator between a datetime
+      # and a duration requires a proper DURATION on the right — if the packer
+      # regresses to ISO-8601 string serialisation (the pre-#8 bug), the server
+      # responds with a type error rather than performing the arithmetic.
+      #
+      # Also exercises the policy-driven DateTime packer we fixed for #10:
+      # $t is a `%DateTime{}` and must round-trip correctly on every negotiated
+      # Bolt version.
+      query = "RETURN $t + $d AS result"
 
       params = %{
-        d: %Duration{
-          day: 0,
-          hour: 0,
-          minute: 54,
-          month: 12,
-          microsecond: {0, 6},
-          second: 65,
-          week: 0,
-          year: 1
-        }
+        t: ~U[2020-01-01 00:00:00Z],
+        d: %Duration{year: 1, minute: 30}
       }
 
+      assert {:ok, %Response{results: [%{"result" => result}]}} =
+               Bolty.query(c.conn, query, params)
+
+      # Neo4j applies month arithmetic first, then seconds — so 2020-01-01 +
+      # 1 year + 30 min = 2021-01-01 00:30:00 UTC. Compare by instant: the
+      # server may return microsecond precision {0, 6} where the sigil gives
+      # {0, 0}, and that's a representation detail we don't want to assert on.
+      assert DateTime.compare(result, ~U[2021-01-01 00:30:00Z]) == :eq
+    end
+
+    @tag :core
+    @tag :bolt_2_x
+    @tag :bolt_3_x
+    @tag :bolt_4_x
+    @tag :bolt_5_x
+    test "Duration as Cypher output: duration.inSeconds(t1, t2) → duration", c do
+      # Exercises DURATION-as-output. The server computes the duration from
+      # two datetimes; bolty decodes it via `TypesHelper.create_duration/4`,
+      # which splits the raw (months, days, seconds, nanoseconds) tuple into
+      # year/month/day/hour/minute/second/microsecond buckets.
+      #
+      # `duration.inSeconds/2` is preferred over `duration.between/2` because
+      # it returns a deterministic seconds-only duration — `between` returns a
+      # compound (months+days+seconds) duration whose canonical form depends on
+      # server calendar logic and is harder to pin down in an assertion.
+      query = "RETURN duration.inSeconds($t1, $t2) AS d"
+
+      params = %{
+        t1: ~U[2020-01-01 00:00:00Z],
+        t2: ~U[2020-01-01 01:30:00Z]
+      }
+
+      # 5400 seconds → create_duration splits into 1h 30m 0s. year/month/week/
+      # day are all 0; microsecond tuple is {0, 6} because create_duration
+      # hardcodes 6-digit precision.
       expected = %Duration{
-        day: 0,
-        hour: 0,
-        minute: 55,
+        year: 0,
         month: 0,
-        microsecond: {0, 6},
-        second: 5,
         week: 0,
-        year: 2
+        day: 0,
+        hour: 1,
+        minute: 30,
+        second: 0,
+        microsecond: {0, 6}
       }
 
-      assert {:ok, %Response{results: [%{"d" => ^expected}]}} = Bolty.query(c.conn, query, params)
+      assert {:ok, %Response{results: [%{"d" => ^expected}]}} =
+               Bolty.query(c.conn, query, params)
     end
   end
 

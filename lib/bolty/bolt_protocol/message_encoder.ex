@@ -2,6 +2,7 @@ defmodule Bolty.BoltProtocol.MessageEncoder do
   @moduledoc false
 
   alias Bolty.PackStream
+  alias Bolty.Policy
 
   @max_chunk_size 65_535
   @end_marker <<0x00, 0x00>>
@@ -9,40 +10,40 @@ defmodule Bolty.BoltProtocol.MessageEncoder do
   @struct8_marker 0xDC
   @struct16_marker 0xDD
 
-  def encode(signature, data) do
+  def encode(signature, data, policy \\ %Policy{}) do
     Bolty.Utils.Logger.log_message(:client, :message_type, data)
 
     encoded =
       signature
-      |> do_encode(data)
+      |> do_encode(data, policy)
       |> generate_chunks([])
 
     Bolty.Utils.Logger.log_message(:client, :message_type, encoded, :hex)
     encoded |> IO.iodata_to_binary()
   end
 
-  defp do_encode(signature, list) when length(list) <= 15 do
+  defp do_encode(signature, list, policy) when length(list) <= 15 do
     [
       <<@tiny_struct_marker::4, length(list)::4, signature>>,
-      encode_list_data(list)
+      encode_list_data(list, policy)
     ]
   end
 
-  defp do_encode(signature, list) when length(list) <= 255 do
-    [<<@struct8_marker::8, length(list)::8, signature>>, encode_list_data(list)]
+  defp do_encode(signature, list, policy) when length(list) <= 255 do
+    [<<@struct8_marker::8, length(list)::8, signature>>, encode_list_data(list, policy)]
   end
 
-  defp do_encode(signature, list) when length(list) <= 65_535 do
+  defp do_encode(signature, list, policy) when length(list) <= 65_535 do
     [
       <<@struct16_marker::8, length(list)::16, signature>>,
-      encode_list_data(list)
+      encode_list_data(list, policy)
     ]
   end
 
-  defp encode_list_data(data) do
+  defp encode_list_data(data, policy) do
     Enum.map(
       data,
-      &PackStream.pack!(&1)
+      &PackStream.pack!(&1, policy)
     )
   end
 
