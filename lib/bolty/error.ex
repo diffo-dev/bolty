@@ -18,13 +18,14 @@ defmodule Bolty.Error do
   @spec wrap(module(), atom()) :: t()
   def wrap(module, code) when is_atom(code), do: %__MODULE__{module: module, code: code}
 
-  @spec wrap(module(), binary()) :: t()
+  @spec wrap(module(), String.t()) :: t()
   def wrap(module, code) when is_binary(code), do: wrap(module, to_atom(code))
 
   @spec wrap(module(), map()) :: t()
   def wrap(module, bolt_error) when is_map(bolt_error),
     do: %__MODULE__{module: module, code: bolt_error.code |> to_atom(), bolt: bolt_error}
 
+  @spec wrap(any(), any(), any()) :: t()
   def wrap(module, code, packstream),
     do: %__MODULE__{module: module, code: code, packstream: packstream}
 
@@ -47,7 +48,7 @@ defmodule Bolty.Error do
   @doc """
   Gets the corresponding atom based on the error code.
   """
-  @spec to_atom(t()) :: String.t()
+  @spec to_atom(String.t()) :: atom()
   def to_atom(error_message) do
     Map.get(@error_map, error_message, :unknown)
   end

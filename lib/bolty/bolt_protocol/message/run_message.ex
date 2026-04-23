@@ -2,22 +2,25 @@ defmodule Bolty.BoltProtocol.Message.RunMessage do
   @moduledoc false
 
   alias Bolty.BoltProtocol.MessageEncoder
+  alias Bolty.Policy
 
   @signature 0x10
 
-  def encode(bolt_version, query, parameters, extra_parameters)
+  def encode(bolt_version, query, parameters, extra_parameters, policy \\ %Policy{})
+
+  def encode(bolt_version, query, parameters, extra_parameters, policy)
       when is_float(bolt_version) and bolt_version >= 3.0 do
     message = [query, parameters, get_extra_parameters(extra_parameters)]
-    MessageEncoder.encode(@signature, message)
+    MessageEncoder.encode(@signature, message, policy)
   end
 
-  def encode(bolt_version, query, parameters, _extra_parameters)
+  def encode(bolt_version, query, parameters, _extra_parameters, policy)
       when is_float(bolt_version) and bolt_version <= 2.0 do
     message = [query, parameters]
-    MessageEncoder.encode(@signature, message)
+    MessageEncoder.encode(@signature, message, policy)
   end
 
-  def encode(_, _, _, _) do
+  def encode(_, _, _, _, _) do
     {:error,
      Bolty.Error.wrap(__MODULE__, %{
        code: :unsupported_message_version,

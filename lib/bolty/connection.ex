@@ -5,6 +5,7 @@ defmodule Bolty.Connection do
   import Bolty.BoltProtocol.ServerResponse
 
   alias Bolty.Client
+  alias Bolty.Policy
   alias Bolty.Response
 
   defstruct [
@@ -12,7 +13,8 @@ defmodule Bolty.Connection do
     :server_version,
     :hints,
     :patch_bolt,
-    :connection_id
+    :connection_id,
+    :policy
   ]
 
   @impl true
@@ -21,8 +23,9 @@ defmodule Bolty.Connection do
 
     with {:ok, %Client{} = client} <- Client.connect(config),
          {:ok, response_server_metadata} <- do_init(client, opts) do
+      policy = Policy.Resolver.resolve(client.bolt_version, response_server_metadata)
       state = get_server_metadata_state(response_server_metadata)
-      {:ok, %__MODULE__{state | client: client}}
+      {:ok, %__MODULE__{state | client: %{client | policy: policy}, policy: policy}}
     end
   end
 
