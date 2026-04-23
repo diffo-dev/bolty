@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.0.10
+
+## What's Changed
+* 10 datetime param illegal by @matt-beanland in https://github.com/diffo-dev/bolty/pull/14
+
+**Full Changelog**: https://github.com/diffo-dev/bolty/compare/0.0.9...0.0.10
+
 ## v0.0.9
   * fix duration stored as string
   
