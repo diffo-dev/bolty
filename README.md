@@ -27,7 +27,7 @@ Add :bolty to your dependencies:
 ```elixir
 def deps() do
   [
-    {:bolty, "~> 0.0.9"}
+    {:bolty, "~> 0.0.10"}
   ]
 end
 ```
