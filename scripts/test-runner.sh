@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 set -euo pipefail
 
 # This script is used to run tests on different database versions

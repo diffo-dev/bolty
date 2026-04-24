@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 # This file contains the configuration for Credo.
 #
 # If you find anything wrong or unclear in this file, please report an

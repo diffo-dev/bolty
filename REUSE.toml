@@ -1,0 +1,30 @@
+version = 1
+
+# REUSE licensing declarations for files where an inline SPDX header is
+# either impractical (JSON has no comments, lock files are generated) or
+# not worth the churn (trivial dot-files). Source files carry inline
+# SPDX headers directly and are not listed here.
+
+[[annotations]]
+path = [
+    ".gitignore",
+    ".gitattributes",
+    ".markdownlint.json",
+    ".prettierrc.yaml",
+    ".tool-versions",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2024 bolty contributors"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "mix.lock"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2024 bolty contributors"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "NOTICE"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2024 bolty contributors"
+SPDX-License-Identifier = "Apache-2.0"

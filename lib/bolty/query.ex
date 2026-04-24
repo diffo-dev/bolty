@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 defmodule Bolty.Query do
   @moduledoc """
   This module defines a structure to represent Bolty single query.

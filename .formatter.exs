@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 # Used by "mix format" and to export configuration.
 export_locals_without_parens = [
   plug: 1,

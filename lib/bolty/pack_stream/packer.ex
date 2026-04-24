@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 defprotocol Bolty.PackStream.Packer do
   @moduledoc """
   The `Bolty.PackStream.Packer` protocol is responsible for serializing any Elixir data

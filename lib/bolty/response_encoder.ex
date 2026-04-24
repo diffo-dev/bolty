@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 defmodule Bolty.ResponseEncoder do
   @moduledoc """
   This module provides functions to encode a query result or data containing Bolty.Types

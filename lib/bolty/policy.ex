@@ -1,11 +1,14 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 defmodule Bolty.Policy do
   @moduledoc """
   Resolved driver behaviour for a single connection.
 
-  Produced once at HELLO completion by `Bolty.Policy.Resolver`, stashed on the
-  connection state, and threaded into every pack/unpack call. Codecs
-  pattern-match on policy fields and never read a Bolt or server version
-  directly.
+  Produced once at HELLO completion by the internal resolver
+  (Bolty.Policy.Resolver), stashed on the connection state, and threaded into
+  every pack/unpack call. Codecs pattern-match on policy fields and never
+  read a Bolt or server version directly.
 
   Policy is an internal distillation of negotiated facts, not a user-facing
   configuration surface. Users influence policy by passing connection options

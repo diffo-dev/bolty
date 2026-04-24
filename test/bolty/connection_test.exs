@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 defmodule Bolty.ConnectionTest do
   use ExUnit.Case, async: false
 
