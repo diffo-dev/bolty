@@ -37,21 +37,31 @@
 #    same conn        1.46 K
 #     new conn        0.47 K - 3.14x slower
 
-{:ok, _pid} = Bolty.start_link(url: "localhost")
+opts = [
+  uri: System.get_env("BOLT_URI", "bolt://localhost:7687"),
+  auth: [
+    username: System.get_env("BOLT_USER", "neo4j"),
+    password: System.get_env("BOLT_PWD", "boltyPassword")
+  ],
+  pool_size: 1
+]
+
+{:ok, conn} = Bolty.start_link(opts)
 
 simple_cypher = """
   MATCH (p:Person)-[r:WROTE]->(b:Book {title: 'The Name of the Wind'})
   RETURN p
 """
 
-query = fn (conn, cypher) ->
-  Bolty.Query.query(conn, cypher)
+new_conn = fn ->
+  {:ok, c} = Bolty.start_link(opts)
+  c
 end
-
-conn = Bolty.conn()
 
 Benchee.run(
   %{
-    "same conn" => fn -> query.(conn, simple_cypher) end,
-    " new conn" => fn -> query.(Bolty.conn(), simple_cypher) end
-  }, time: 1)
+    "same conn" => fn -> Bolty.query(conn, simple_cypher) end,
+    " new conn" => fn -> Bolty.query(new_conn.(), simple_cypher) end
+  },
+  time: 1
+)

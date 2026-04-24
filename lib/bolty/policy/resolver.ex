@@ -11,10 +11,10 @@ defmodule Bolty.Policy.Resolver do
   against synthetic inputs.
 
   `server_metadata` is the raw map returned by HELLO (keys are strings:
-  `"server"`, `"hints"`, `"patch_bolt"`, etc.). We extract what we need and
-  thread both `bolt_version` and `server_version` into every per-dimension
-  decision so that adding a server_version branch later is a clause change,
-  not a signature change.
+  `"server"`, `"hints"`, `"connection_id"`, etc.). We extract what we need
+  and thread both `bolt_version` and `server_version` into every
+  per-dimension decision so that adding a server_version branch later is a
+  clause change, not a signature change.
   """
   @spec resolve(float() | nil, map()) :: Policy.t()
   def resolve(bolt_version, server_metadata) when is_map(server_metadata) do
