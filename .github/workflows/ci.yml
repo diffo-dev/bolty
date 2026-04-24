@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 name: CI
 
 on:
@@ -6,6 +9,13 @@ on:
       - master
 
 jobs:
+  reuse:
+    name: REUSE Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: fsfe/reuse-action@v5
+
   lint:
     name: Code Quality Checks
     runs-on: ubuntu-latest

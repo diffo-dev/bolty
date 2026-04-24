@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 defmodule Bolty.Mixfile do
   use Mix.Project
 
@@ -64,7 +67,12 @@ defmodule Bolty.Mixfile do
       files: [
         "lib",
         "mix.exs",
-        "LICENSE"
+        "README.md",
+        "CHANGELOG.md",
+        "LICENSE",
+        "NOTICE",
+        "LICENSES",
+        "REUSE.toml"
       ],
       licenses: ["Apache-2.0"],
       maintainers: [
@@ -81,7 +89,7 @@ defmodule Bolty.Mixfile do
     [
       source_ref: "v#{@version}",
       main: "readme",
-      extras: ["README.md"]
+      extras: ["README.md", "CHANGELOG.md"]
     ]
   end
 

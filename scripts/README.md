@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2024 bolty contributors
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Help script
 
 This script is used to run tests on different versions of databases and Bolt. You can customize the execution by specifying the test command, Bolt versions, and databases to use.

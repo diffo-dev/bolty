@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 defmodule ConvertersTest do
   use ExUnit.Case
   alias Bolty.Utils.Converters

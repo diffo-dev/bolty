@@ -1,6 +1,15 @@
+<!--
+SPDX-FileCopyrightText: 2024 bolty contributors
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Bolty
 
-
+[![Module Version](https://img.shields.io/hexpm/v/bolty)](https://hex.pm/packages/bolty)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen)](https://hexdocs.pm/bolty/)
+[![License](https://img.shields.io/hexpm/l/bolty)](https://github.com/diffo-dev/bolty/blob/master/LICENSES/Apache-2.0.txt)
+[![REUSE status](https://api.reuse.software/badge/github.com/diffo-dev/bolty)](https://api.reuse.software/info/github.com/diffo-dev/bolty)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/diffo-dev/bolty)
 
 `Bolty` is a reluctant fork of the the 'Boltx' Elixir driver for [Neo4j](https://neo4j.com/developer/graph-database/)/Bolt Protocol.
 

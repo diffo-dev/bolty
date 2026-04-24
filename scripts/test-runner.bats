@@ -1,4 +1,6 @@
 #!/usr/bin/env bats
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
 
 # Inicializar la variable de entorno TEST_MODE=true antes de ejecutar las pruebas
 

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 defmodule Bolty.Utils.Logger do
   @moduledoc false
   # Designed to log Bolt protocol message between Client and Server.

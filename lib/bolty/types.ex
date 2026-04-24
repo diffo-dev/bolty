@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 defmodule Bolty.Types do
   @moduledoc """
   Basic support for representing nodes, relationships and paths belonging to

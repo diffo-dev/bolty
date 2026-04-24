@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 defmodule Bolty.Test.Fixture do
   def create_graph(conn, :movie) do
     Bolty.query_many!(conn, movie_cypher())

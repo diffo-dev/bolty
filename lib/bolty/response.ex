@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 defmodule Bolty.Response do
   @moduledoc """
   The result of a single Bolt RUN/PULL exchange returned by `Bolty.query/4`

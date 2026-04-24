@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 if Code.ensure_loaded?(Jason) do
   defmodule Bolty.ResponseEncoder.Json.Jason do
     @moduledoc """

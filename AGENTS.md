@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2024 bolty contributors
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # AGENTS.md — bolty
 
 > Status: v1 draft. Written primarily for agents that will **use** or **work on** bolty. Secondary audience: future maintainers (us) who need to remember why it is shaped the way it is. Expected to evolve.
@@ -284,7 +289,32 @@ Snapshot from `.agent-notes/issues.json` — re-dump to refresh.
 | [#8](https://github.com/diffo-dev/bolty/issues/8) | duration stored as string | 0.0.9 | Further fix — `Duration` outside of a map/struct wrapper was still being stored as a string. |
 | [#10](https://github.com/diffo-dev/bolty/issues/10) | dateTime param illegal | 0.0.10 | `%DateTime{}` was packed with the evolved 0x69 tag unconditionally and broke against Neo4j 5.x when `:versions` was constrained to Bolt 4.x. Fixed by policy-driven packstream: `%Bolty.Policy{datetime: :legacy \| :evolved}` resolved at HELLO, dispatched in the packer. See `.agent-notes/policy-design.md`. |
 
-## 17. Evolving this document
+## 17. Licensing and REUSE
+
+bolty is Apache License 2.0 and is [REUSE](https://reuse.software/)-compliant. The compliance scheme — decided together with the maintainers and documented here so future contributors don't need to re-derive it:
+
+- **Licence**: Apache-2.0 throughout. bolty derives from `boltx` (Luis Sagastume) which derives from `bolt_sips` (Florin Patrascu), both Apache-2.0. Upstream attribution lives in `NOTICE`; per-file headers carry the collective `bolty contributors` claim on our own modifications. Relicensing away from Apache-2.0 is not on the table — we don't own the upstream code and the patent grant is load-bearing for a protocol driver.
+- **Per-file header template** (hash-comment languages — Elixir, YAML, shell, etc.):
+  ```
+  # SPDX-FileCopyrightText: 2024 bolty contributors
+  # SPDX-License-Identifier: Apache-2.0
+  ```
+  For Markdown use HTML-comment form so GitHub renders it as nothing:
+  ```html
+  <!--
+  SPDX-FileCopyrightText: 2024 bolty contributors
+  SPDX-License-Identifier: Apache-2.0
+  -->
+  ```
+  For shell scripts, the shebang stays on line 1; the header goes on lines 2–3.
+- **When adding a new file**: apply the appropriate header on creation. `reuse lint` runs in CI (see `.github/workflows/ci.yml` → `reuse` job) and will fail a PR that ships an unheadered file.
+- **Files that can't take inline headers** (JSON, `mix.lock`, terse dotfiles) are declared in `REUSE.toml` at the repo root. Add a new entry rather than hacking the comment syntax.
+- **`LICENSES/Apache-2.0.txt`** is the canonical SPDX licence text — don't modify it. The root `LICENSE` mirrors it for GitHub's project-metadata scraper.
+- **`NOTICE`** is the attribution chain — extend it only if the project derives from a new upstream.
+
+`bolty contributors` is a collective attribution label; the authoritative list of contributors is `git shortlog -sn --no-merges`.
+
+## 18. Evolving this document
 
 - Keep it agent-first: dense, scannable, honest about gaps.
 - When bolty gains a capability, update §11 and add a usage snippet in §3 if there is a new ergonomic.

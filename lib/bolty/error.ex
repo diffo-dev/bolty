@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 bolty contributors
+# SPDX-License-Identifier: Apache-2.0
+
 defmodule Bolty.Error do
   @error_map %{
     "Neo.ClientError.Security.Unauthorized" => :unauthorized,
