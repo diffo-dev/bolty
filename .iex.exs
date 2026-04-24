@@ -4,36 +4,34 @@ rescue
   Code.LoadError -> :rescued
 end
 
-alias Bolty.{Utils, Protocol, Router, ConnectionSupervisor, Response}
+alias Bolty.{Response, Types, Utils}
 alias Bolty
 
 Application.put_env(:tzdata, :autoupdate, :disabled)
 
-# default port considered to be: 7687
-test_config = [
-  # url: 'localhost',
-  url: "bolt://localhost",
-  basic_auth: [username: "neo4j", password: "test"],
+# Example options for an iex dev session — matches the keys
+# Bolty.Client.Config.new/1 reads. Default Bolt port is 7687.
+_dev_opts = [
+  uri: "bolt://localhost:7687",
+  auth: [username: "neo4j", password: "boltyPassword"],
   pool_size: 5,
-  max_overflow: 1,
-  # retry the request, in case of error - in the example below the retry will
-  # linearly increase the delay from 150ms following a Fibonacci pattern,
-  # cap the delay at 15 seconds (the value defined by the default `:timeout`
-  # parameter) and giving up after 3 attempts
-  retry_linear_backoff: [delay: 150, factor: 2, tries: 3],
-  read: [pool_size: 5, pool_overflow: 0],
-  write: [pool_size: 1, pool_overflow: 0]
+  max_overflow: 1
 ]
 
 Mix.shell().info([
   :green,
   """
-  Optional, if needed for development (Bolty is the alias for Bolty):
-    {:ok, _neo} = Bolty.start_link(url: "bolt://neo4j:test@localhost")
-    conn = Bolty.conn()
-  Examples:
-    Bolty.query!(conn, "UNWIND range(1, 10) AS n RETURN n")
-    Bolty.query!(conn, "RETURN 1 as n")
+  Dev shell ready. Example:
+
+      {:ok, conn} =
+        Bolty.start_link(
+          uri: "bolt://localhost:7687",
+          auth: [username: "neo4j", password: "boltyPassword"]
+        )
+
+      Bolty.query!(conn, "UNWIND range(1, 10) AS n RETURN n")
+      Bolty.query!(conn, "RETURN 1 AS n") |> Bolty.Response.first()
+
   --- ✄  -------------------------------------------------
 
   """

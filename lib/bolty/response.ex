@@ -1,4 +1,22 @@
 defmodule Bolty.Response do
+  @moduledoc """
+  The result of a single Bolt RUN/PULL exchange returned by `Bolty.query/4`
+  and friends.
+
+  Fields:
+
+    * `results` — row-major list of `%{field => value}` maps; what you usually want.
+    * `fields` — list of returned field names in column order.
+    * `records` — untransformed column-major rows, parallel to `fields`.
+    * `plan`, `profile`, `stats`, `notifications`, `type`, `bookmark` — server
+      metadata from the trailing SUCCESS message; shapes follow the Bolt
+      protocol.
+
+  Implements `Enumerable` over `results` — `Enum.map/2`, `Enum.count/1`, and
+  `for` comprehensions all work. Use `Bolty.Response.first/1` for the common
+  single-row case.
+  """
+
   import Bolty.BoltProtocol.ServerResponse
 
   @type t :: %__MODULE__{
@@ -18,12 +36,6 @@ defmodule Bolty.Response do
   @type acc :: any
   @type element :: any
 
-  @doc """
-  Una estructura que representa una consulta Bolty.
-
-  * `statement` - La declaración de la consulta.
-  * `extra` - Datos adicionales asociados con la consulta.
-  """
   defstruct results: [],
             fields: nil,
             records: [],

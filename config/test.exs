@@ -1,15 +1,14 @@
 import Config
 
+# Example config only — the test suite reads its options directly from
+# Bolty.TestHelper.opts/0 rather than from Application env. Kept in sync
+# with the keys Bolty.Client.Config.new/1 actually consumes so anyone
+# copy-pasting from here gets something that works.
 config :bolty, Bolt,
-  # default port considered to be: 7687
-  url: "bolt://localhost",
-  basic_auth: [username: "neo4j", password: "password"],
+  uri: "bolt://localhost:7687",
+  auth: [username: "neo4j", password: "password"],
   pool_size: 10,
-  max_overflow: 2,
-  queue_interval: 500,
-  queue_target: 1500,
-  prefix: :default
-
+  max_overflow: 2
 
 level =
   if System.get_env("DEBUG") do

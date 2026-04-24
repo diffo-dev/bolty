@@ -258,9 +258,6 @@ Authoritative design (including calibration history and non-goals): [`.agent-not
 
 ## 15. Sharp edges / known quirks
 
-- `.iex.exs` still references `Bolty.Router`, `Bolty.ConnectionSupervisor`, `Bolty.Protocol`, and a `Bolty.conn()` helper that **do not exist**. The example snippet uses legacy `url:` / `basic_auth:` options instead of the current `uri:` / `auth:`. Treat it as historical until cleaned up.
-- `config/test.exs` also uses the legacy `url:` / `basic_auth:` keys and a `:queue_interval` / `:queue_target` / `:prefix` triple that the current config reader does not consume — harmless but misleading.
-- `Bolty.Response`'s struct docstring is in Spanish (inherited from boltx). Rewrite in English when touching the module.
 - `@error_map` only covers four Neo bolt errors; everything else collapses to `:unknown`. Extend when you need finer-grained handling.
 - `format_param/1` at the top level only rewrites `Point`. Temporal-with-offset structs pass through as-is; call their own `format_param/1` if you need Cypher-ready strings.
 - Env-var-overrides-opts precedence for `:auth` (BOLT_USER / BOLT_PWD) — as noted in §5.
@@ -275,6 +272,8 @@ Snapshot from `.agent-notes/issues.json` — re-dump to refresh.
 | --- | --- | --- | --- |
 | [#12](https://github.com/diffo-dev/bolty/issues/12) | reuse compliance | enhancement | Make bolty (and its deps handling) REUSE-compliant. |
 | [#13](https://github.com/diffo-dev/bolty/issues/13) | vector | enhancement | Investigate Neo4j vector / vector-search support. DozerDB caps at Neo4j 5.26.3 so the useful envelope is bounded; may need negotiated Bolt-version behaviour. |
+| [#16](https://github.com/diffo-dev/bolty/issues/16) | boltx-era inheritance cleanup | maintenance | Drop `patch_bolt` dead wiring from `Bolty.Connection`, modernise `config/test.exs` and `.iex.exs` against the current `Bolty.Client.Config.new/1` option names, rewrite `Bolty.Response`'s Spanish docstring in English. Active on branch `16-boltx-related-maintenance`. |
+| &mdash; | memgraph datetime calibration | maintenance | Separate follow-up: run the Europe/Berlin round-trip test against the `memgraph-2.13.0` docker-compose service when a Memgraph instance is available, then either add it as a regression test (if the resolver's default already works) or add a `server_version =~ "Memgraph"` branch in `Bolty.Policy.Resolver.put_datetime/3`. Deferred — no blocker for 0.0.10. |
 
 **Closed (for historical context)**
 

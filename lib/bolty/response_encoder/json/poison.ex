@@ -6,7 +6,7 @@ if Code.ensure_loaded?(Poison) do
 
     Allow this usage:
     ```
-    conn = Bolty.conn()
+    {:ok, conn} = Bolty.start_link(uri: "bolt://localhost:7687", auth: [username: "neo4j", password: "..."])
     {:ok, res} = Bolty.query(conn, "MATCH (t:TestNode) RETURN t")
     Poison.encode!(res)
     ```

@@ -12,7 +12,6 @@ defmodule Bolty.Connection do
     :client,
     :server_version,
     :hints,
-    :patch_bolt,
     :connection_id,
     :policy
   ]
@@ -170,14 +169,12 @@ defmodule Bolty.Connection do
   end
 
   defp get_server_metadata_state(response_metadata) do
-    patch_bolt = Map.get(response_metadata, "patch_bolt", "")
     hints = Map.get(response_metadata, "hints", "")
     connection_id = Map.get(response_metadata, "connection_id", "")
 
     %__MODULE__{
       client: nil,
       server_version: response_metadata["server"],
-      patch_bolt: patch_bolt,
       hints: hints,
       connection_id: connection_id
     }
