@@ -132,3 +132,4 @@ __pycache__
 
 # agent related
 .agent-notes/
+.claude

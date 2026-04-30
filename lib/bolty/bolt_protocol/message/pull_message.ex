@@ -55,6 +55,9 @@ defmodule Bolty.BoltProtocol.Message.PullMessage do
     end
   end
 
+  def format_error(:unsupported_message_version), do: "PULL message version not supported"
+  def format_error(_), do: "unknown error from PULL response"
+
   defp get_extra_parameters(extra_parameters) do
     %{
       n: Map.get(extra_parameters, :n, -1),

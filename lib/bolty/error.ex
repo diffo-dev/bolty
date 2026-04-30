@@ -44,8 +44,17 @@ defmodule Bolty.Error do
 
   """
   @spec message(t()) :: String.t()
-  def message(%__MODULE__{code: code, module: module}) do
-    module.format_error(code)
+  def message(%__MODULE__{code: code, module: module, bolt: bolt}) do
+    cond do
+      is_map(bolt) and is_binary(bolt[:message]) ->
+        bolt[:message]
+
+      is_atom(module) and Code.ensure_loaded?(module) and function_exported?(module, :format_error, 1) ->
+        module.format_error(code)
+
+      true ->
+        "#{inspect(module)} error: #{inspect(code)}"
+    end
   end
 
   @doc """
