@@ -5,6 +5,13 @@ SPDX-License-Identifier: Apache-2.0
 
 # Changelog
 
+## v0.0.11
+
+## What's Changed
+* Fix UndefinedFunctionError when formatting a Neo4j EntityNotFound error by @matt-beanland in https://github.com/diffo-dev/bolty/pull/21
+
+**Full Changelog**: https://github.com/diffo-dev/bolty/compare/0.0.10...0.0.11
+
 ## v0.0.10
 
 ## What's Changed
