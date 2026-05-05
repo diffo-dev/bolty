@@ -328,16 +328,12 @@ defmodule Bolty.Client do
       |> Enum.map(&String.trim/1)
       |> Enum.filter(&(String.length(&1) > 0))
 
-    {:ok,
-     Enum.reduce(statements, [], fn statement, acc ->
-       case Bolty.Client.run_statement(client, statement, parameters, extra_parameters) do
-         {:ok, result} ->
-           [result | acc]
-
-         _ ->
-           acc
-       end
-     end)}
+    Enum.reduce_while(statements, {:ok, []}, fn statement, {:ok, acc} ->
+      case Bolty.Client.run_statement(client, statement, parameters, extra_parameters) do
+        {:ok, result} -> {:cont, {:ok, [result | acc]}}
+        {:error, _} = error -> {:halt, error}
+      end
+    end)
   end
 
   def send_begin(client, _extra_parameters)
