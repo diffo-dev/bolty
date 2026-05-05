@@ -32,15 +32,18 @@ defmodule Bolty.BoltProtocol.Message.PullMessage do
   def prepare_messages(bolt_version, messages) do
     records = Enum.reduce(messages, [], &group_record/2)
 
-    case List.keymember?(messages, :failure, 0) do
-      true ->
+    cond do
+      List.keymember?(messages, :ignored, 0) ->
+        {:error, Bolty.Error.wrap(__MODULE__, %{code: "ignored", message: "request ignored"})}
+
+      List.keymember?(messages, :failure, 0) ->
         {:error,
          Bolty.Error.wrap(__MODULE__, %{
            code: messages[:failure]["code"],
            message: messages[:failure]["message"]
          })}
 
-      false ->
+      true ->
         success_data =
           if bolt_version <= 2.0 do
             Map.merge(
