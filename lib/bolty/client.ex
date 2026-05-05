@@ -254,6 +254,9 @@ defmodule Bolty.Client do
       {:success, response} ->
         {:ok, response}
 
+      {:ignored, _} ->
+        {:ok, %{}}
+
       {:failure, response} ->
         {:error,
          Bolty.Error.wrap(__MODULE__, %{code: response["code"], message: response["message"]})}
