@@ -131,9 +131,6 @@ defmodule Bolty.Connection do
         {:error, error, state}
     end
   rescue
-    e in Bolty.Error ->
-      {:error, e, state}
-
     e ->
       {:error, e, state}
   end

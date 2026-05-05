@@ -47,7 +47,7 @@ defmodule Bolty.BoltProtocol.Message.RunMessage do
         end
 
       {:ignored, _} ->
-        {:error, Bolty.Error.wrap(__MODULE__, %{code: "ignored", message: "request ignored"})}
+        {:error, Bolty.Error.wrap(__MODULE__, :ignored)}
 
       {:failure, response} ->
         {:error,
