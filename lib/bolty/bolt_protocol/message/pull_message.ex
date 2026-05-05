@@ -34,7 +34,7 @@ defmodule Bolty.BoltProtocol.Message.PullMessage do
 
     cond do
       List.keymember?(messages, :ignored, 0) ->
-        {:error, Bolty.Error.wrap(__MODULE__, %{code: "ignored", message: "request ignored"})}
+        {:error, Bolty.Error.wrap(__MODULE__, :ignored)}
 
       List.keymember?(messages, :failure, 0) ->
         {:error,
