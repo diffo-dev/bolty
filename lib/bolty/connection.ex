@@ -16,7 +16,8 @@ defmodule Bolty.Connection do
     :server_version,
     :hints,
     :connection_id,
-    :policy
+    :policy,
+    in_transaction: false
   ]
 
   @impl true
@@ -34,20 +35,27 @@ defmodule Bolty.Connection do
   @impl true
   def handle_begin(opts, %__MODULE__{client: client} = state) do
     extra_parameters = opts[:extra_parameters] || %{}
-    {:ok, _} = Client.send_begin(client, extra_parameters)
-    {:ok, :began, state}
+
+    case Client.send_begin(client, extra_parameters) do
+      {:ok, _} -> {:ok, :began, %{state | in_transaction: true}}
+      {:error, error} -> {:disconnect, error, state}
+    end
   end
 
   @impl true
   def handle_commit(_, %__MODULE__{client: client} = state) do
-    {:ok, _} = Client.send_commit(client)
-    {:ok, :committed, state}
+    case Client.send_commit(client) do
+      {:ok, _} -> {:ok, :committed, %{state | in_transaction: false}}
+      {:error, error} -> {:disconnect, error, state}
+    end
   end
 
   @impl true
   def handle_rollback(_, %__MODULE__{client: client} = state) do
-    {:ok, _} = Client.send_rollback(client)
-    {:ok, :rolledback, state}
+    case Client.send_rollback(client) do
+      {:ok, _} -> {:ok, :rolledback, %{state | in_transaction: false}}
+      {:error, error} -> {:disconnect, error, state}
+    end
   end
 
   @impl true
@@ -103,6 +111,7 @@ defmodule Bolty.Connection do
   @impl true
   def handle_fetch(query, _cursor, _opts, state), do: {:cont, query, state}
   @impl true
+  def handle_status(_opts, %__MODULE__{in_transaction: true} = state), do: {:transaction, state}
   def handle_status(_opts, state), do: {:idle, state}
 
   defp execute(statement, params, _opts, state) do
@@ -113,23 +122,17 @@ defmodule Bolty.Connection do
         {:ok, statement_result}
 
       {:error, %Bolty.Error{code: error_code} = error} ->
-        action =
+        if error_code in [:syntax_error, :semantic_error] and not state.in_transaction do
           if client.bolt_version >= 3.0,
-            do: &Client.send_reset/1,
-            else: &Client.send_ack_failure/1
-
-        if error_code in [:syntax_error, :semantic_error] do
-          action.(client)
+            do: Client.send_reset(client),
+            else: Client.send_ack_failure(client)
         end
 
         {:error, error, state}
     end
   rescue
-    e in Bolty.Error ->
-      {:error, %{code: :failure, message: "#{e.bolt.message}, code: #{e.code}"}, state}
-
     e ->
-      {:error, %{code: :failure, message: e}}
+      {:error, e, state}
   end
 
   defp result(
